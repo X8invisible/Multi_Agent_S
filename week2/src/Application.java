@@ -16,7 +16,7 @@ public class Application {
 
             //start simpleagent
             String[] books = {"Java for Dummies"};
-            AgentController myAgent = myContainer.createNewAgent("buyer", BookBuyerAgent.class.getCanonicalName(),books);
+            AgentController myAgent = myContainer.createNewAgent("seller1", BookSellerAgent.class.getCanonicalName(),null);
             myAgent.start();
         }catch (Exception e){
             System.out.println("exception starting agent: "+ e.toString());

@@ -34,7 +34,7 @@ public class BookSellerAgent extends Agent{
         addBehaviour(new OneShotBehaviour() {
             @Override
             public void action() {
-                catalogue.put(title, new Integer(price))
+                catalogue.put(title, price);
             }
         });
     }
@@ -46,7 +46,7 @@ public class BookSellerAgent extends Agent{
                 String title = msg.getContent();
                 ACLMessage reply = msg.createReply();
 
-                Integer price = (Integer) catalogue.get(title);
+                Integer price = (int) catalogue.get(title);
                 if(price != null){
                     reply.setPerformative(ACLMessage.PROPOSE);
 
@@ -61,6 +61,23 @@ public class BookSellerAgent extends Agent{
         @Override
         public void action() {
             MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+            ACLMessage msg = myAgent.receive(mt);
+            if(msg !=null) {
+                //accept proposal received, process it
+                String title = msg.getContent();
+                ACLMessage reply = msg.createReply();
+                Integer price = (int) catalogue.remove(title);
+                if (price != null) {
+                    reply.setPerformative(ACLMessage.INFORM);
+                    System.out.println(title + " sold to agent " + msg.getSender().getName());
+                } else {
+                    reply.setPerformative(ACLMessage.FAILURE);
+                    reply.setContent("not-available");
+                }
+                myAgent.send(reply);
+            }else {
+                block();
+            }
         }
     }
 
