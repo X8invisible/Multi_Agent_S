@@ -1,1 +1,1 @@
-http://andrei-virtual-machine:7778/acc
+http://146.176.73.41:7778/acc
