@@ -1,29 +1,29 @@
 import jade.core.Agent;
 import jade.core.behaviours.*;
 import jade.domain.DFService;
-import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
-import java.util.*;
+import java.util.Hashtable;
 
-public class BookSellerAgent extends Agent {
+public class Auctioneer extends Agent {
 
     // The catalogue of books for sale (maps the title of a book to its price)
     private Hashtable catalogue;
-
+    private Hashtable bids;
     // The GUI by means of which the user can add books in the catalogue
     private BookSellerGui myGui;
 
     // Put agent initializations here
     protected void setup(){
-        System.out.println("Seller-agent "+getAID().getName()+" starting.");
+        System.out.println("Auctioneer-agent "+getAID().getName()+" starting.");
 
         // Create the catalogue
         catalogue = new Hashtable();
-
+        bids = new Hashtable();
         // Create and show the GUI
         myGui = new BookSellerGui(this);
         myGui.showGui();
@@ -38,8 +38,8 @@ public class BookSellerAgent extends Agent {
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
-        sd.setType("book-selling");
-        sd.setName("JADE-book-trading");
+        sd.setType("auction-house");
+        sd.setName("you-want-it-i-got-it");
         dfd.addServices(sd);
 
         try
@@ -71,19 +71,19 @@ public class BookSellerAgent extends Agent {
         myGui.dispose();
 
         // Printout a dismissal message
-        System.out.println("Seller-agent "+getAID().getName()+" terminating.");
+        System.out.println("Auctioneer-agent "+getAID().getName()+" terminating.");
     }
 
     /**
-     This is invoked by the GUI when the user adds a new book for sale
+     This is invoked by the GUI when the user adds a new item for sale
      */
-    public void updateCatalogue(final String title, final int price)
+    public void updateCatalogue(final String title, final int id)
     {
         addBehaviour(new OneShotBehaviour()
         {
             public void action()
             {
-                catalogue.put(title, new Integer(price));
+                catalogue.put(title, id);
             }
         } );
     }
@@ -108,22 +108,27 @@ public class BookSellerAgent extends Agent {
             if (msg != null)
             {
                 // Message received. Process it
-                String title = msg.getContent();
-                ACLMessage reply = msg.createReply();
-                Integer price = (Integer) catalogue.get(title);
-                if (price != null)
+                String[] offer = msg.getContent().split(",");
+                String title = offer[0];
+                int price = Integer.parseInt(offer[1]);
+                //ACLMessage reply = msg.createReply();
+                if (catalogue.contains(title))
                 {
+                    //If the item is up for auction, remember the bid and the message
+                    bids.put(msg, price);
+
                     // The requested book is available for sale. Reply with the price
-                    reply.setPerformative(ACLMessage.PROPOSE);
-                    reply.setContent(String.valueOf(price.intValue()));
+                    //reply.setPerformative(ACLMessage.PROPOSE);
+                    //reply.setContent(String.valueOf(price.intValue()));
                 }
                 else
                 {
+                    //System.out.println("no item with that title");
                     // The requested book is NOT available for sale.
-                    reply.setPerformative(ACLMessage.REFUSE);
-                    reply.setContent("not-available");
+                    //reply.setPerformative(ACLMessage.REFUSE);
+                    //reply.setContent("not-available");
                 }
-                myAgent.send(reply);
+                //myAgent.send(reply);
             }
             else
             {
@@ -137,13 +142,20 @@ public class BookSellerAgent extends Agent {
     private class PurchaseOrdersServer extends CyclicBehaviour {
         public void action() {
             MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
-            ACLMessage msg = myAgent.receive(mt);
+            int maxBid = 0;
+            for (Object i: bids.values()) {
+                if(maxBid < (int) i){
+                    maxBid = (int) i;
+                }
+            }
+            ACLMessage msg = (ACLMessage) bids.get((Object) maxBid);
             if (msg != null) {
                 // ACCEPT_PROPOSAL Message received. Process it
-                String title = msg.getContent();
+                String[] offer = msg.getContent().split(",");
+                String title = offer[0];
                 ACLMessage reply = msg.createReply();
-                Integer price = (Integer) catalogue.remove(title);
-                if (price != null) {
+                Integer id = (Integer) catalogue.remove(title);
+                if (id != null) {
                     reply.setPerformative(ACLMessage.INFORM);
                     System.out.println(title+" sold to agent "+msg.getSender().getName());
                 }
