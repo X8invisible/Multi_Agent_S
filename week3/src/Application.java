@@ -20,15 +20,16 @@ public class Application
             AgentController rma = myContainer.createNewAgent("rma", "jade.tools.rma.rma", null);
             rma.start();
 
-            String[] books = {"Java"};
+            String[] books = {"12"};
 
+            AgentController myAgent3 = myContainer.createNewAgent("sellerA", Auctioneer.class.getCanonicalName(), null);
+            myAgent3.start();
             //Now start our own BookBuyerAgent, called buyer.
             AgentController myAgent = myContainer.createNewAgent("buyer1", Bidder.class.getCanonicalName(), books);
             myAgent.start();
             AgentController myAgent2 = myContainer.createNewAgent("buyer2", Bidder.class.getCanonicalName(), books);
             myAgent2.start();
-            AgentController myAgent3 = myContainer.createNewAgent("sellerA", Auctioneer.class.getCanonicalName(), null);
-            myAgent3.start();
+
 
             //Now start our own BookBuyerAgent, called buyer.
             //AgentController myAgent = myContainer.createNewAgent("buyer", BookBuyerAgent.class.getCanonicalName(), books);

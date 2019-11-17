@@ -102,13 +102,16 @@ public class Bidder extends Agent{
                     myAgent.send(cfp);
                     // Prepare the template to get proposals
                     mt = MessageTemplate.and(MessageTemplate.MatchConversationId("auction-house"), MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+                    //System.out.println(getAID().getName()+" sent bid");
                     step = 1;
                     break;
                 case 1:
                     // Receive the purchase order reply
+
                     ACLMessage reply = myAgent.receive(mt);
                     if (reply != null)
                     {
+                        System.out.println(getAID().getName()+" Waiting for response on bid");
                         // Purchase order reply received
                         if (reply.getPerformative() == ACLMessage.INFORM)
                         {

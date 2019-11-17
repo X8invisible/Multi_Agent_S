@@ -1,3 +1,4 @@
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.*;
 import jade.domain.DFService;
@@ -13,9 +14,17 @@ public class Auctioneer extends Agent {
 
     // The catalogue of books for sale (maps the title of a book to its price)
     private Hashtable catalogue;
-    private Hashtable bids;
     // The GUI by means of which the user can add books in the catalogue
     private BookSellerGui myGui;
+
+    private boolean auctionStart = false;
+    //message template for replies
+    public MessageTemplate mt;
+
+    public AID[] bidders;
+    public AID bestBidder;
+    public int bestPrice;
+
 
     // Put agent initializations here
     protected void setup(){
@@ -23,7 +32,7 @@ public class Auctioneer extends Agent {
 
         // Create the catalogue
         catalogue = new Hashtable();
-        bids = new Hashtable();
+        catalogue.put("Java", 12);
         // Create and show the GUI
         myGui = new BookSellerGui(this);
         myGui.showGui();
@@ -77,43 +86,49 @@ public class Auctioneer extends Agent {
     /**
      This is invoked by the GUI when the user adds a new item for sale
      */
-    public void updateCatalogue(final String title, final int id)
+    public void updateCatalogue(final String title, final int price)
     {
         addBehaviour(new OneShotBehaviour()
         {
             public void action()
             {
-                catalogue.put(title, id);
+                catalogue.put(title, price);
             }
         } );
     }
 
+    public String getFirstItemName() {
+        return (String)catalogue.keySet().toArray()[0];
+    }
+
+    public int getItemInitialPrice(final String title) {
+        Integer price = (Integer) catalogue.get(title);
+        if (price != null) {
+            return (int)price;
+        }
+        else {
+            return 0;
+        }
+    }
 
 
-
-    /**
-     Inner class OfferRequestsServer.
-     This is the behaviour used by Book-seller agents to serve incoming requests
-     for offer from buyer agents.
-     If the requested book is in the local catalogue the seller agent replies
-     with a PROPOSE message specifying the price. Otherwise a REFUSE message is
-     sent back.
-     */
     private class OfferRequestsServer extends CyclicBehaviour
     {
         public void action()
         {
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.CFP);
+            mt = MessageTemplate.MatchPerformative(ACLMessage.CFP);
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null)
             {
                 // Message received. Process it
                 String[] offer = msg.getContent().split(",");
                 String title = offer[0];
+                System.out.println(title);
                 int price = Integer.parseInt(offer[1]);
                 //ACLMessage reply = msg.createReply();
-                if (catalogue.contains(title))
+                if (catalogue.contains(Integer.parseInt(title)))
                 {
+                    System.out.println("got offer");
                     //If the item is up for auction, remember the bid and the message
                     bids.put(msg, price);
 
@@ -141,7 +156,6 @@ public class Auctioneer extends Agent {
 
     private class PurchaseOrdersServer extends CyclicBehaviour {
         public void action() {
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
             int maxBid = 0;
             for (Object i: bids.values()) {
                 if(maxBid < (int) i){
@@ -149,7 +163,9 @@ public class Auctioneer extends Agent {
                 }
             }
             ACLMessage msg = (ACLMessage) bids.get((Object) maxBid);
+            System.out.println("");
             if (msg != null) {
+                System.out.println("got best offer");
                 // ACCEPT_PROPOSAL Message received. Process it
                 String[] offer = msg.getContent().split(",");
                 String title = offer[0];
